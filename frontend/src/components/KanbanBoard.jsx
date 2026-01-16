@@ -114,6 +114,18 @@ function KanbanBoard({ tasks, onTaskUpdate, onTaskClick }) {
                           {...provided.draggableProps}
                           {...provided.dragHandleProps}
                           onClick={() => onTaskClick(task)}
+                          onMouseEnter={(e) => {
+                            if (!snapshot.isDragging) {
+                              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)'
+                              e.currentTarget.style.transform = 'translateY(-2px)'
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!snapshot.isDragging) {
+                              e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)'
+                              e.currentTarget.style.transform = 'translateY(0)'
+                            }
+                          }}
                           style={{
                             ...provided.draggableProps.style,
                             backgroundColor: 'white',
@@ -124,7 +136,7 @@ function KanbanBoard({ tasks, onTaskUpdate, onTaskClick }) {
                               ? '0 5px 15px rgba(0,0,0,0.3)'
                               : '0 1px 3px rgba(0,0,0,0.1)',
                             cursor: 'pointer',
-                            transition: 'box-shadow 0.2s'
+                            transition: 'box-shadow 0.2s, transform 0.2s'
                           }}
                         >
                           <div style={{ fontWeight: '500', marginBottom: '8px', fontSize: '14px' }}>
