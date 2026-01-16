@@ -39,15 +39,15 @@ router.get('/:id', (req, res) => {
 
 // Create task
 router.post('/', (req, res) => {
-  const { project_id, title, description, amount, due_date, status, invoice_status } = req.body;
+  const { project_id, company_id, title, description, amount, rate_type, due_date, status, invoice_status } = req.body;
 
   if (!title) {
     res.status(400).json({ error: 'Task title is required' });
     return;
   }
 
-  const sql = `INSERT INTO tasks (project_id, title, description, amount, due_date, status, invoice_status) VALUES (?, ?, ?, ?, ?, ?, ?)`;
-  db.run(sql, [project_id, title, description, amount || 0, due_date, status || 'pending', invoice_status || 'not_invoiced'], function(err) {
+  const sql = `INSERT INTO tasks (project_id, company_id, title, description, amount, rate_type, due_date, status, invoice_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+  db.run(sql, [project_id, company_id, title, description, amount || 0, rate_type || 'spot', due_date, status || 'pending', invoice_status || 'not_invoiced'], function(err) {
     if (err) {
       res.status(500).json({ error: err.message });
       return;
@@ -55,9 +55,11 @@ router.post('/', (req, res) => {
     res.status(201).json({
       id: this.lastID,
       project_id,
+      company_id,
       title,
       description,
       amount,
+      rate_type: rate_type || 'spot',
       due_date,
       status: status || 'pending',
       invoice_status: invoice_status || 'not_invoiced'
@@ -67,10 +69,10 @@ router.post('/', (req, res) => {
 
 // Update task
 router.put('/:id', (req, res) => {
-  const { project_id, title, description, amount, due_date, status, invoice_status, sort_order } = req.body;
-  const sql = `UPDATE tasks SET project_id = ?, title = ?, description = ?, amount = ?, due_date = ?, status = ?, invoice_status = ?, sort_order = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`;
+  const { project_id, company_id, title, description, amount, rate_type, due_date, status, invoice_status, sort_order } = req.body;
+  const sql = `UPDATE tasks SET project_id = ?, company_id = ?, title = ?, description = ?, amount = ?, rate_type = ?, due_date = ?, status = ?, invoice_status = ?, sort_order = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`;
 
-  db.run(sql, [project_id, title, description, amount, due_date, status, invoice_status, sort_order, req.params.id], function(err) {
+  db.run(sql, [project_id, company_id, title, description, amount, rate_type || 'spot', due_date, status, invoice_status, sort_order, req.params.id], function(err) {
     if (err) {
       res.status(500).json({ error: err.message });
       return;
@@ -79,7 +81,7 @@ router.put('/:id', (req, res) => {
       res.status(404).json({ error: 'Task not found' });
       return;
     }
-    res.json({ id: req.params.id, project_id, title, description, amount, due_date, status, invoice_status, sort_order });
+    res.json({ id: req.params.id, project_id, company_id, title, description, amount, rate_type, due_date, status, invoice_status, sort_order });
   });
 });
 

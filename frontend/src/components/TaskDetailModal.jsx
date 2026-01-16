@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
-import TimeTracker from './TimeTracker'
 
 const API_BASE_URL = '/api'
 
@@ -19,29 +18,37 @@ const INVOICE_STATUS_OPTIONS = [
   { value: 'paid', label: '完了' }
 ]
 
-function TaskDetailModal({ task, projects, onClose, onUpdate, onDelete }) {
+const RATE_TYPE_OPTIONS = [
+  { value: 'hourly', label: '時給' },
+  { value: 'monthly', label: '月給' },
+  { value: 'spot', label: 'スポット' }
+]
+
+function TaskDetailModal({ task, companies, onClose, onUpdate, onDelete, onCompaniesChange }) {
   const [formData, setFormData] = useState({
-    project_id: '',
+    company_id: '',
     title: '',
     description: '',
     amount: 0,
+    rate_type: 'spot',
     status: 'pending',
-    invoice_status: 'not_invoiced',
-    due_date: ''
+    invoice_status: 'not_invoiced'
   })
-  const [showTimeTracker, setShowTimeTracker] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
+  const [showCompanyForm, setShowCompanyForm] = useState(false)
+  const [editingCompany, setEditingCompany] = useState(null)
+  const [companyFormData, setCompanyFormData] = useState({ name: '' })
 
   useEffect(() => {
     if (task) {
       setFormData({
-        project_id: task.project_id || '',
+        company_id: task.company_id || '',
         title: task.title,
         description: task.description || '',
         amount: task.amount || 0,
+        rate_type: task.rate_type || 'spot',
         status: task.status || 'pending',
-        invoice_status: task.invoice_status || 'not_invoiced',
-        due_date: task.due_date || ''
+        invoice_status: task.invoice_status || 'not_invoiced'
       })
     }
   }, [task])
@@ -74,15 +81,40 @@ function TaskDetailModal({ task, projects, onClose, onUpdate, onDelete }) {
     }
   }
 
+  const handleCompanySubmit = async (e) => {
+    e.preventDefault()
+    try {
+      if (editingCompany) {
+        await axios.put(`${API_BASE_URL}/companies/${editingCompany.id}`, companyFormData)
+      } else {
+        const response = await axios.post(`${API_BASE_URL}/companies`, companyFormData)
+        setFormData({ ...formData, company_id: response.data.id })
+      }
+      onCompaniesChange()
+      setShowCompanyForm(false)
+      setEditingCompany(null)
+      setCompanyFormData({ name: '' })
+    } catch (error) {
+      console.error('Error saving company:', error)
+      alert('会社の保存に失敗しました')
+    }
+  }
+
+  const handleEditCompany = (company) => {
+    setEditingCompany(company)
+    setCompanyFormData({ name: company.name })
+    setShowCompanyForm(true)
+  }
+
   if (!task) return null
 
-  const project = projects.find(p => p.id === task.project_id)
+  const company = companies.find(c => c.id === task.company_id)
 
   return (
     <div className="modal" onClick={onClose}>
       <div className="modal-content" style={{ maxWidth: '600px' }} onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>タスク詳細</h2>
+          <h2 style={{ visibility: 'hidden' }}>_</h2>
           <button className="close-btn" onClick={onClose}>×</button>
         </div>
 
@@ -91,9 +123,9 @@ function TaskDetailModal({ task, projects, onClose, onUpdate, onDelete }) {
             <div style={{ marginBottom: '20px' }}>
               <h3 style={{ fontSize: '24px', marginBottom: '10px' }}>{task.title}</h3>
 
-              {project && (
+              {company && (
                 <div style={{ fontSize: '14px', color: '#667eea', marginBottom: '10px' }}>
-                  プロジェクト: {project.name}
+                  会社: {company.name}
                 </div>
               )}
 
@@ -127,21 +159,18 @@ function TaskDetailModal({ task, projects, onClose, onUpdate, onDelete }) {
                   </div>
                 )}
 
-                {task.due_date && (
-                  <div className="card" style={{ padding: '15px' }}>
-                    <div style={{ fontSize: '12px', color: '#888', marginBottom: '5px' }}>期限</div>
-                    <div style={{ fontWeight: '600' }}>{task.due_date}</div>
+                <div className="card" style={{ padding: '15px' }}>
+                  <div style={{ fontSize: '12px', color: '#888', marginBottom: '5px' }}>単価感</div>
+                  <div style={{ fontWeight: '600' }}>
+                    {RATE_TYPE_OPTIONS.find(r => r.value === task.rate_type)?.label || 'スポット'}
                   </div>
-                )}
+                </div>
               </div>
             </div>
 
             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
               <button className="btn btn-primary" onClick={() => setIsEditing(true)}>
                 編集
-              </button>
-              <button className="btn btn-secondary" onClick={() => setShowTimeTracker(true)}>
-                時間記録
               </button>
               <button className="btn btn-danger" onClick={handleDelete}>
                 削除
@@ -170,18 +199,46 @@ function TaskDetailModal({ task, projects, onClose, onUpdate, onDelete }) {
             </div>
 
             <div className="form-group">
-              <label>プロジェクト</label>
-              <select
-                value={formData.project_id}
-                onChange={(e) => setFormData({ ...formData, project_id: e.target.value })}
-              >
-                <option value="">プロジェクトなし</option>
-                {projects.map((project) => (
-                  <option key={project.id} value={project.id}>
-                    {project.name}
-                  </option>
-                ))}
-              </select>
+              <label>会社</label>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <select
+                  value={formData.company_id}
+                  onChange={(e) => setFormData({ ...formData, company_id: e.target.value })}
+                  style={{ flex: 1 }}
+                >
+                  <option value="">会社なし</option>
+                  {companies.map((company) => (
+                    <option key={company.id} value={company.id}>
+                      {company.name}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ padding: '8px 12px', fontSize: '14px' }}
+                  onClick={() => {
+                    setEditingCompany(null)
+                    setCompanyFormData({ name: '' })
+                    setShowCompanyForm(true)
+                  }}
+                >
+                  +
+                </button>
+                {formData.company_id && (
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    style={{ padding: '8px 12px', fontSize: '14px' }}
+                    onClick={() => {
+                      const selectedCompany = companies.find(c => c.id === parseInt(formData.company_id))
+                      if (selectedCompany) handleEditCompany(selectedCompany)
+                    }}
+                  >
+                    編集
+                  </button>
+                )}
+              </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
@@ -221,12 +278,15 @@ function TaskDetailModal({ task, projects, onClose, onUpdate, onDelete }) {
               </div>
 
               <div className="form-group">
-                <label>期限</label>
-                <input
-                  type="date"
-                  value={formData.due_date}
-                  onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
-                />
+                <label>単価感</label>
+                <select
+                  value={formData.rate_type}
+                  onChange={(e) => setFormData({ ...formData, rate_type: e.target.value })}
+                >
+                  {RATE_TYPE_OPTIONS.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
               </div>
             </div>
 
@@ -241,11 +301,57 @@ function TaskDetailModal({ task, projects, onClose, onUpdate, onDelete }) {
           </form>
         )}
 
-        {showTimeTracker && (
-          <TimeTracker
-            task={task}
-            onClose={() => setShowTimeTracker(false)}
-          />
+        {showCompanyForm && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1001
+          }}>
+            <div style={{
+              backgroundColor: 'white',
+              padding: '20px',
+              borderRadius: '8px',
+              minWidth: '300px'
+            }}>
+              <h3 style={{ marginBottom: '15px' }}>
+                {editingCompany ? '会社を編集' : '会社を追加'}
+              </h3>
+              <form onSubmit={handleCompanySubmit}>
+                <div className="form-group">
+                  <label>会社名 *</label>
+                  <input
+                    type="text"
+                    value={companyFormData.name}
+                    onChange={(e) => setCompanyFormData({ ...companyFormData, name: e.target.value })}
+                    required
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => {
+                      setShowCompanyForm(false)
+                      setEditingCompany(null)
+                      setCompanyFormData({ name: '' })
+                    }}
+                  >
+                    キャンセル
+                  </button>
+                  <button type="submit" className="btn btn-primary">
+                    {editingCompany ? '更新' : '追加'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
         )}
       </div>
     </div>

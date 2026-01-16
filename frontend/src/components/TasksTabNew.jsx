@@ -7,25 +7,36 @@ const API_BASE_URL = '/api'
 
 function TasksTabNew({ projects, selectedProject, onSelectProject }) {
   const [tasks, setTasks] = useState([])
+  const [companies, setCompanies] = useState([])
   const [showModal, setShowModal] = useState(false)
   const [selectedTask, setSelectedTask] = useState(null)
   const [formData, setFormData] = useState({
-    project_id: selectedProject?.id || '',
+    company_id: '',
     title: '',
     description: '',
     amount: 0,
-    due_date: '',
+    rate_type: 'spot',
     status: 'pending',
     invoice_status: 'not_invoiced'
   })
 
   useEffect(() => {
+    loadCompanies()
     if (selectedProject) {
       loadTasks(selectedProject.id)
     } else {
       loadTasks()
     }
   }, [selectedProject])
+
+  const loadCompanies = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/companies`)
+      setCompanies(response.data)
+    } catch (error) {
+      console.error('Error loading companies:', error)
+    }
+  }
 
   const loadTasks = async (projectId = null) => {
     try {
@@ -47,11 +58,11 @@ function TasksTabNew({ projects, selectedProject, onSelectProject }) {
       loadTasks(selectedProject?.id)
       setShowModal(false)
       setFormData({
-        project_id: selectedProject?.id || '',
+        company_id: '',
         title: '',
         description: '',
         amount: 0,
-        due_date: '',
+        rate_type: 'spot',
         status: 'pending',
         invoice_status: 'not_invoiced'
       })
@@ -64,11 +75,11 @@ function TasksTabNew({ projects, selectedProject, onSelectProject }) {
   const closeModal = () => {
     setShowModal(false)
     setFormData({
-      project_id: selectedProject?.id || '',
+      company_id: '',
       title: '',
       description: '',
       amount: 0,
-      due_date: '',
+      rate_type: 'spot',
       status: 'pending',
       invoice_status: 'not_invoiced'
     })
@@ -111,15 +122,15 @@ function TasksTabNew({ projects, selectedProject, onSelectProject }) {
             </div>
             <form onSubmit={handleSubmit}>
               <div className="form-group">
-                <label>プロジェクト</label>
+                <label>会社</label>
                 <select
-                  value={formData.project_id}
-                  onChange={(e) => setFormData({ ...formData, project_id: e.target.value })}
+                  value={formData.company_id}
+                  onChange={(e) => setFormData({ ...formData, company_id: e.target.value })}
                 >
-                  <option value="">プロジェクトなし</option>
-                  {projects.map((project) => (
-                    <option key={project.id} value={project.id}>
-                      {project.name}
+                  <option value="">会社なし</option>
+                  {companies.map((company) => (
+                    <option key={company.id} value={company.id}>
+                      {company.name}
                     </option>
                   ))}
                 </select>
@@ -141,23 +152,28 @@ function TasksTabNew({ projects, selectedProject, onSelectProject }) {
                   rows={3}
                 />
               </div>
-              <div className="form-group">
-                <label>金額（円）</label>
-                <input
-                  type="number"
-                  value={formData.amount}
-                  onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
-                  min="0"
-                  step="100"
-                />
-              </div>
-              <div className="form-group">
-                <label>期限</label>
-                <input
-                  type="date"
-                  value={formData.due_date}
-                  onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
-                />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                <div className="form-group">
+                  <label>金額（円）</label>
+                  <input
+                    type="number"
+                    value={formData.amount}
+                    onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
+                    min="0"
+                    step="100"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>単価感</label>
+                  <select
+                    value={formData.rate_type}
+                    onChange={(e) => setFormData({ ...formData, rate_type: e.target.value })}
+                  >
+                    <option value="hourly">時給</option>
+                    <option value="monthly">月給</option>
+                    <option value="spot">スポット</option>
+                  </select>
+                </div>
               </div>
               <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
                 <button type="button" className="btn btn-secondary" onClick={closeModal}>
@@ -175,7 +191,7 @@ function TasksTabNew({ projects, selectedProject, onSelectProject }) {
       {selectedTask && (
         <TaskDetailModal
           task={selectedTask}
-          projects={projects}
+          companies={companies}
           onClose={() => setSelectedTask(null)}
           onUpdate={() => {
             loadTasks(selectedProject?.id)
@@ -185,6 +201,7 @@ function TasksTabNew({ projects, selectedProject, onSelectProject }) {
             loadTasks(selectedProject?.id)
             setSelectedTask(null)
           }}
+          onCompaniesChange={loadCompanies}
         />
       )}
     </div>

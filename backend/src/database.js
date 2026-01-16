@@ -56,18 +56,33 @@ function initializeDatabase() {
       CREATE TABLE IF NOT EXISTS tasks (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         project_id INTEGER,
+        company_id INTEGER,
         title TEXT NOT NULL,
         description TEXT,
         amount REAL DEFAULT 0,
+        rate_type TEXT DEFAULT 'spot',
         status TEXT DEFAULT 'pending',
         invoice_status TEXT DEFAULT 'not_invoiced',
         due_date DATE,
         sort_order INTEGER DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        FOREIGN KEY (company_id) REFERENCES companies(id)
       )
     `);
+
+    // Add new columns if they don't exist (for existing databases)
+    db.run(`ALTER TABLE tasks ADD COLUMN company_id INTEGER REFERENCES companies(id)`, (err) => {
+      if (err && !err.message.includes('duplicate column')) {
+        // Column already exists, ignore
+      }
+    });
+    db.run(`ALTER TABLE tasks ADD COLUMN rate_type TEXT DEFAULT 'spot'`, (err) => {
+      if (err && !err.message.includes('duplicate column')) {
+        // Column already exists, ignore
+      }
+    });
 
     // Time entries table
     db.run(`
