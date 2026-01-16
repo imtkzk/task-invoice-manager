@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
+import CompaniesTab from './components/CompaniesTab'
 import ProjectsTab from './components/ProjectsTab'
-import TasksTab from './components/TasksTab'
+import TasksTabNew from './components/TasksTabNew'
 import InvoicesTab from './components/InvoicesTab'
 
 const API_BASE_URL = '/api'
 
 function App() {
-  const [activeTab, setActiveTab] = useState('projects')
+  const [activeTab, setActiveTab] = useState('tasks')
   const [projects, setProjects] = useState([])
   const [selectedProject, setSelectedProject] = useState(null)
 
@@ -33,16 +34,22 @@ function App() {
 
       <div className="tabs">
         <button
-          className={`tab ${activeTab === 'projects' ? 'active' : ''}`}
-          onClick={() => setActiveTab('projects')}
-        >
-          プロジェクト
-        </button>
-        <button
           className={`tab ${activeTab === 'tasks' ? 'active' : ''}`}
           onClick={() => setActiveTab('tasks')}
         >
           タスク
+        </button>
+        <button
+          className={`tab ${activeTab === 'companies' ? 'active' : ''}`}
+          onClick={() => setActiveTab('companies')}
+        >
+          会社
+        </button>
+        <button
+          className={`tab ${activeTab === 'projects' ? 'active' : ''}`}
+          onClick={() => setActiveTab('projects')}
+        >
+          プロジェクト
         </button>
         <button
           className={`tab ${activeTab === 'invoices' ? 'active' : ''}`}
@@ -52,18 +59,22 @@ function App() {
         </button>
       </div>
 
-      {activeTab === 'projects' && (
-        <ProjectsTab
+      {activeTab === 'tasks' && (
+        <TasksTabNew
           projects={projects}
-          onProjectsChange={loadProjects}
+          selectedProject={selectedProject}
           onSelectProject={setSelectedProject}
         />
       )}
 
-      {activeTab === 'tasks' && (
-        <TasksTab
+      {activeTab === 'companies' && (
+        <CompaniesTab />
+      )}
+
+      {activeTab === 'projects' && (
+        <ProjectsTab
           projects={projects}
-          selectedProject={selectedProject}
+          onProjectsChange={loadProjects}
           onSelectProject={setSelectedProject}
         />
       )}

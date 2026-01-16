@@ -20,16 +20,34 @@ const db = new sqlite3.Database(dbPath, (err) => {
 
 function initializeDatabase() {
   db.serialize(() => {
+    // Companies table
+    db.run(`
+      CREATE TABLE IF NOT EXISTS companies (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        contact_person TEXT,
+        email TEXT,
+        phone TEXT,
+        address TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     // Projects table
     db.run(`
       CREATE TABLE IF NOT EXISTS projects (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         description TEXT,
+        company_id INTEGER,
         client_name TEXT,
         hourly_rate REAL DEFAULT 0,
+        fixed_price REAL DEFAULT 0,
+        pricing_type TEXT DEFAULT 'hourly',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (company_id) REFERENCES companies(id)
       )
     `);
 
@@ -41,8 +59,10 @@ function initializeDatabase() {
         title TEXT NOT NULL,
         description TEXT,
         amount REAL DEFAULT 0,
-        is_completed BOOLEAN DEFAULT 0,
+        status TEXT DEFAULT 'pending',
+        invoice_status TEXT DEFAULT 'not_invoiced',
         due_date DATE,
+        sort_order INTEGER DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
@@ -67,6 +87,7 @@ function initializeDatabase() {
     db.run(`
       CREATE TABLE IF NOT EXISTS invoices (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        company_id INTEGER,
         project_id INTEGER,
         invoice_number TEXT UNIQUE,
         total_amount REAL NOT NULL,
@@ -76,6 +97,7 @@ function initializeDatabase() {
         notes TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (company_id) REFERENCES companies(id),
         FOREIGN KEY (project_id) REFERENCES projects(id)
       )
     `);

@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 
+const companiesRouter = require('./routes/companies');
 const projectsRouter = require('./routes/projects');
 const tasksRouter = require('./routes/tasks');
 const timeEntriesRouter = require('./routes/timeEntries');
@@ -17,6 +18,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // Routes
+app.use('/api/companies', companiesRouter);
 app.use('/api/projects', projectsRouter);
 app.use('/api/tasks', tasksRouter);
 app.use('/api/time-entries', timeEntriesRouter);
